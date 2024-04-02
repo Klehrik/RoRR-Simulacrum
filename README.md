@@ -1,3 +1,5 @@
+[Thunderstore page](https://thunderstore.io/c/risk-of-rain-returns/p/Klehrik/Simulacrum/)
+
 **Requires Return of Modding 1.0.20+ to function properly.**
 
 Fight your way through waves of teleporter events.  
