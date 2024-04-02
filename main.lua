@@ -1,4 +1,4 @@
--- Simulacrum v1.0.0
+-- Simulacrum v1.0.1
 -- Klehrik
 
 log.info("Successfully loaded ".._ENV["!guid"]..".")
@@ -41,6 +41,7 @@ local function take_void_damage(actor, origin)
     actor.time_outside = actor.time_outside or 0
     local dist = gm.point_distance(actor.x, actor.y, origin.x, origin.y)
     if dist > radius then
+        if actor.invincible == false then actor.invincible = 0 end
         if actor.invincible <= 0 then
             actor.time_outside = actor.time_outside + 1
             if actor.time_outside % 60 == 0 then
