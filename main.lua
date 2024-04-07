@@ -1,8 +1,8 @@
--- Simulacrum v1.0.1
+-- Simulacrum v1.0.2
 -- Klehrik
 
 log.info("Successfully loaded ".._ENV["!guid"]..".")
-Helper = require("./helper")
+mods.on_all_mods_loaded(function() for k, v in pairs(mods) do if type(v) == "table" and v.hfuncs then Helper = v end end end)
 
 local diff_icon = gm.sprite_add(_ENV["!plugins_mod_folder_path"].."/simulacrum.png", 5, false, false, 12, 9)
 local diff_icon2x = gm.sprite_add(_ENV["!plugins_mod_folder_path"].."/simulacrum2x.png", 4, false, false, 25, 19)
@@ -138,15 +138,15 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
     if gm._mod_game_getDifficulty() == diff_id then
 
         -- Teleporter
-        if not Helper.does_instance_exist(teleporter) then
+        if not Helper.instance_exists(teleporter) then
             teleporter = Helper.get_teleporter()
-            if Helper.does_instance_exist(teleporter) then teleporter.maxtime = 30 *60 end     -- Set charge time to 30 seconds
+            if Helper.instance_exists(teleporter) then teleporter.maxtime = 30 *60 end     -- Set charge time to 30 seconds
         end
-        if not Helper.does_instance_exist(command) then command = Helper.find_active_instance(gm.constants.oCommand) end
+        if not Helper.instance_exists(command) then command = Helper.find_active_instance(gm.constants.oCommand) end
 
 
         -- Director
-        if Helper.does_instance_exist(director) then
+        if Helper.instance_exists(director) then
             
             -- Reset variables when starting a new run
             if director.time_start <= 0 then
@@ -157,7 +157,7 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
 
                     local base = Helper.find_active_instance(gm.constants.oBase)
                     local pan = Helper.find_active_instance(gm.constants.oPodCameraPan)
-                    if Helper.does_instance_exist(base) and Helper.does_instance_exist(pan) and Helper.does_instance_exist(teleporter) then
+                    if Helper.instance_exists(base) and Helper.instance_exists(pan) and Helper.instance_exists(teleporter) then
                         base.x = teleporter.x
                         base.y = teleporter.y
                         pan.x = teleporter.x
@@ -176,11 +176,11 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
 
                 -- Warp player to teleporter
                 local player = Helper.get_client_player()
-                if Helper.does_instance_exist(player) then
-                    if Helper.does_instance_exist(teleporter) then
+                if Helper.instance_exists(player) then
+                    if Helper.instance_exists(teleporter) then
                         player.x = teleporter.x
                         player.y = teleporter.y - 12
-                    elseif Helper.does_instance_exist(command) then
+                    elseif Helper.instance_exists(command) then
                         player.x = command.x
                         player.y = command.y - 12
                     end
@@ -189,14 +189,14 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
 
             -- Replace Divine Teleporters with standard ones until the required number of waves have been cleared
             local tpe = Helper.find_active_instance(gm.constants.oTeleporterEpic)
-            if stages_passed < (required_waves - 1) and Helper.does_instance_exist(tpe) then
+            if stages_passed < (required_waves - 1) and Helper.instance_exists(tpe) then
                 gm.instance_create_depth(tpe.x, tpe.y, 2, gm.constants.oTeleporter)
                 gm.instance_destroy(tpe)
             end
 
             -- Spawn multishop terminals after wave completion
             if not spawned_rewards then
-                if Helper.does_instance_exist(teleporter) then
+                if Helper.instance_exists(teleporter) then
                     if teleporter.active >= 3.0 then
                         spawned_rewards = true
 
@@ -219,13 +219,11 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
             end
 
             -- Make reward multishops free
-            if Helper.does_instance_exist(teleporter) then
+            if Helper.instance_exists(teleporter) then
                 if teleporter.active >= 3.0 then
                     local shops = Helper.get_multishops()
-                    if shops then
-                        for i = 1, #shops do
-                            if shops[i].ff <= 1.0 then shops[i].cost = 0 end
-                        end
+                    for i = 1, #shops do
+                        if shops[i].ff <= 1.0 then shops[i].cost = 0 end
                     end
                 end
             end
@@ -240,8 +238,8 @@ end)
 gm.post_script_hook(gm.constants.step_actor, function(self, other, result, args)
     -- Deal void fog damage to all actors
     if gm._mod_game_getDifficulty() == diff_id then
-        if Helper.does_instance_exist(teleporter) then take_void_damage(self, teleporter)
-        elseif Helper.does_instance_exist(command) then take_void_damage(self, command)
+        if Helper.instance_exists(teleporter) then take_void_damage(self, teleporter)
+        elseif Helper.instance_exists(command) then take_void_damage(self, command)
         end
     end
 end)
@@ -250,7 +248,7 @@ end)
 gm.pre_code_execute(function(self, other, code, result, flags)
     -- Prevent enemies from spawning before the teleporter is hit, as well as on the ship
     if code.name:match("oDirectorControl_Alarm_1") then
-        if (Helper.does_instance_exist(teleporter) and teleporter.time <= 0) or Helper.does_instance_exist(command) then
+        if (Helper.instance_exists(teleporter) and teleporter.time <= 0) or Helper.instance_exists(command) then
             self:alarm_set(1, 60)
             return false
         end
@@ -271,7 +269,7 @@ gm.post_code_execute(function(self, other, code, result, flags)
         if gm._mod_game_getDifficulty() == diff_id then
 
             -- Teleporter draw
-            if Helper.does_instance_exist(teleporter) then
+            if Helper.instance_exists(teleporter) then
 
                 -- Wave count
                 text = "Wave "..(math.floor(stages_passed + 1))
@@ -282,7 +280,7 @@ gm.post_code_execute(function(self, other, code, result, flags)
 
                 draw_void_fog(teleporter)
 
-            elseif Helper.does_instance_exist(command) then
+            elseif Helper.instance_exists(command) then
                 draw_void_fog(command)
 
             end
