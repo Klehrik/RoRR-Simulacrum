@@ -1,10 +1,10 @@
 ﻿{
 	"name": "Simulacrum",
-	"version_number": "1.0.2",
+	"version_number": "1.1.0",
 	"website_url": "https://github.com/Klehrik/RoRR-Simulacrum",
-	"description": "Fight your way through waves of teleporter events.",
+	"description": "[Multiplayer compatible]  Fight your way through waves of teleporter events.",
 	"dependencies": [
-		"ReturnOfModding-ReturnOfModding-1.0.20",
-		"Klehrik-HelperFunctions-1.0.1"
+		"ReturnOfModding-ReturnOfModding-1.0.34",
+		"Klehrik-HelperFunctions-1.0.9"
 	]
 }
