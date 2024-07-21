@@ -1,4 +1,4 @@
--- Simulacrum v1.1.0
+-- Simulacrum v1.1.1
 -- Klehrik
 
 log.info("Successfully loaded ".._ENV["!guid"]..".")
@@ -40,6 +40,7 @@ local diff_scale            = 0.12
 local damage_tweak          = 0.7   -- Multiplies all enemy damage by this value
 local damage_tweak_tweak    = 0.95  -- damage_tweak is multiplied by this value after every stage (heavier damage reduction late game)
 local provi_damage_tweak    = 1.25  -- Multiplies Providence's (and his Wurms') damage by this value (applied after damage_tweak)
+local health_multiplier     = 0.55
 local chest_cost_tweak      = 1.8
 local banned_items          = {"ror-infusion", "ror-umbrella"}
 
@@ -372,5 +373,20 @@ gm.pre_script_hook(gm.constants.run_destroy, function(self, other, result, args)
     if gm._mod_game_getDifficulty() == diff_id then
         -- Put "Very Easy" localization text back
         gm.ds_map_set(lang_map, "hud.difficulty[0]", very_easy_text)
+    end
+end)
+
+
+gm.pre_script_hook(gm.constants.step_actor, function(self, other, result, args)
+    -- Health multiplier
+    if self.team == 2.0 and self.simulacrum_health_multiplier == nil then
+        self.simulacrum_health_multiplier = true
+
+        if self.maxhp then
+            self.maxhp = self.maxhp * health_multiplier
+            self.maxhp_base = self.maxhp
+            self.hp = self.maxhp
+            self.maxbarrier = self.maxhp
+        end
     end
 end)

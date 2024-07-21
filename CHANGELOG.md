@@ -15,3 +15,7 @@
 * Gamemode has been rebalanced overall.
     * Minimum waves for completion raised to 20.
     * Infusion and Umbrella can no longer spawn.
+
+### v1.1.1
+* Heavily reduced the health of all enemies.
+    * Apparently I was testing with a persistent -50% HP modifier on every enemy the whole time (leftover from an unfinished mod), so now it should be what I originally intended.
