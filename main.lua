@@ -1,4 +1,4 @@
--- Simulacrum v1.1.1
+-- Simulacrum v1.1.2
 -- Klehrik
 
 log.info("Successfully loaded ".._ENV["!guid"]..".")
@@ -378,15 +378,17 @@ end)
 
 
 gm.pre_script_hook(gm.constants.step_actor, function(self, other, result, args)
-    -- Health multiplier
-    if self.team == 2.0 and self.simulacrum_health_multiplier == nil then
-        self.simulacrum_health_multiplier = true
+    if gm._mod_game_getDifficulty() == diff_id then
+        -- Health multiplier
+        if self.team == 2.0 and self.simulacrum_health_multiplier == nil then
+            self.simulacrum_health_multiplier = true
 
-        if self.maxhp then
-            self.maxhp = self.maxhp * health_multiplier
-            self.maxhp_base = self.maxhp
-            self.hp = self.maxhp
-            self.maxbarrier = self.maxhp
+            if self.maxhp then
+                self.maxhp = self.maxhp * health_multiplier
+                self.maxhp_base = self.maxhp
+                self.hp = self.maxhp
+                self.maxbarrier = self.maxhp
+            end
         end
     end
 end)
