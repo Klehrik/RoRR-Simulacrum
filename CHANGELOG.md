@@ -1,3 +1,6 @@
+### v1.1.4
+* Fixed void area not being drawn as a result of last patch.
+
 ### v1.1.3
 * Switched to lag-free code_execute hooks.
 

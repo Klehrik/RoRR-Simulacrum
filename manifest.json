@@ -1,6 +1,6 @@
 ﻿{
 	"name": "Simulacrum",
-	"version_number": "1.1.3",
+	"version_number": "1.1.4",
 	"website_url": "https://github.com/Klehrik/RoRR-Simulacrum",
 	"description": "[Multiplayer compatible]  Fight your way through waves of teleporter events.",
 	"dependencies": [

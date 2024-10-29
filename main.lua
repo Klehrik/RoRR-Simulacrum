@@ -329,7 +329,7 @@ gm.post_script_hook(gm.constants.cost_get_base_gold_price_scale, function(self, 
 end)
 
 
-gm.post_code_execute("gml_Object_oInit_Draw_7", function(self, other)
+gm.post_code_execute("gml_Object_oInit_Draw_73", function(self, other)
     if gm._mod_game_getDifficulty() == diff_id then
 
         -- Teleporter draw
