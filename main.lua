@@ -1,4 +1,4 @@
--- Simulacrum v1.1.2
+-- Simulacrum
 -- Klehrik
 
 log.info("Successfully loaded ".._ENV["!guid"]..".")
@@ -312,13 +312,11 @@ gm.post_script_hook(gm.constants.step_actor, function(self, other, result, args)
 end)
 
 
-gm.pre_code_execute(function(self, other, code, result, flags)
+gm.pre_code_execute("gml_Object_oDirectorControl_Alarm_1", function(self, other)
     -- Prevent enemies from spawning before the teleporter is hit, as well as on the ship
-    if code.name:match("oDirectorControl_Alarm_1") then
-        if Helper.instance_exists(teleporter) and (teleporter.time == nil or teleporter.time <= 0) then
-            self:alarm_set(1, 60)
-            return false
-        end
+    if Helper.instance_exists(teleporter) and (teleporter.time == nil or teleporter.time <= 0) then
+        self:alarm_set(1, 60)
+        return false
     end
 end)
 
@@ -331,27 +329,25 @@ gm.post_script_hook(gm.constants.cost_get_base_gold_price_scale, function(self, 
 end)
 
 
-gm.post_code_execute(function(self, other, code, result, flags)
-    if code.name:match("oInit_Draw_7") then
-        if gm._mod_game_getDifficulty() == diff_id then
+gm.post_code_execute("gml_Object_oInit_Draw_7", function(self, other)
+    if gm._mod_game_getDifficulty() == diff_id then
 
-            -- Teleporter draw
-            if Helper.instance_exists(teleporter) then
+        -- Teleporter draw
+        if Helper.instance_exists(teleporter) then
 
-                -- Wave count
-                if director and teleporter.time ~= nil then
-                    local text = "Wave "..(math.floor(director.stages_passed + 1))
-                    if teleporter.time <= 0 then text = "Begin wave?"
-                    elseif teleporter.active >= 3.0 then text = "Proceed to next wave"
-                    end
-                    gm.draw_text(teleporter.x, teleporter.y + 18, text)
+            -- Wave count
+            if director and teleporter.time ~= nil then
+                local text = "Wave "..(math.floor(director.stages_passed + 1))
+                if teleporter.time <= 0 then text = "Begin wave?"
+                elseif teleporter.active >= 3.0 then text = "Proceed to next wave"
                 end
-
-                draw_void_fog(teleporter)
-
+                gm.draw_text(teleporter.x, teleporter.y + 18, text)
             end
 
+            draw_void_fog(teleporter)
+
         end
+
     end
 end)
 
