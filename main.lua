@@ -1,390 +1,257 @@
 -- Simulacrum
 -- Klehrik
 
-log.info("Successfully loaded ".._ENV["!guid"]..".")
-mods.on_all_mods_loaded(function() for k, v in pairs(mods) do if type(v) == "table" and v.hfuncs then Helper = v end end end)
+mods["MGReturns-ENVY"].auto()
+mods["RoRRModdingToolkit-RoRR_Modding_Toolkit"].auto(true)
 
-local diff_icon = gm.sprite_add(_ENV["!plugins_mod_folder_path"].."/simulacrum.png", 5, false, false, 12, 9)
-local diff_icon2x = gm.sprite_add(_ENV["!plugins_mod_folder_path"].."/simulacrum2x.png", 4, false, false, 25, 19)
-local diff_sfx = gm.audio_create_stream(_ENV["!plugins_mod_folder_path"].."/simulacrum.ogg")
+PATH = _ENV["!plugins_mod_folder_path"].."/"
 
-local lang_map = nil
-local very_easy_text = ""
+require("./void_fog")
 
-local frame = 0
-
-local init = false
-local diff_id = -2
-
-local void_circles = {}
-local void_circle_radius = 250
-local void_colour = 10038912
-local surf = -1
-
-local director = nil
-local spawned_rewards = false
-
-local teleporter = nil
-
-local flag_new_run = false
-local stage_id = -1
-
+local diff, spawned_rewards, tp, director
+void_actor = nil
+local boss_objs = {
+    [gm.constants.oBoss1]       = true,
+    [gm.constants.oBoss3]       = true,
+    [gm.constants.oBoss4]       = true,
+    [gm.constants.oWurmHead]    = true
+}
 
 -- Parameters
-local required_waves        = 20
-local radius                = 1000  -- Radius of safe zone (in pixels)
-local void_death_time       = 18    -- Time (in seconds) before guaranteed death outside the safe zone
-local void_death_time_enemy = 27
-local charge_time           = 20    -- Teleporter charge time (in seconds)
-local diff_scale            = 0.12
-local damage_tweak          = 0.7   -- Multiplies all enemy damage by this value
-local damage_tweak_tweak    = 0.95  -- damage_tweak is multiplied by this value after every stage (heavier damage reduction late game)
-local provi_damage_tweak    = 1.25  -- Multiplies Providence's (and his Wurms') damage by this value (applied after damage_tweak)
-local health_multiplier     = 0.55
-local chest_cost_tweak      = 1.8
-local banned_items          = {"ror-infusion", "ror-umbrella"}
+required_waves          = 7
+radius                  = 1000  -- Radius of safe zone (in pixels)
+void_circle_radius      = 250
+void_color              = Color(0x802E99)
+void_death_time         = 18    -- Time (in seconds) before guaranteed death outside the safe zone
+void_death_time_enemy   = 27
+charge_time             = 20    -- Teleporter charge time (in seconds)
+diff_scale              = 0.12
+damage_tweak            = 0.7   -- Multiplies all enemy damage by this value
+damage_tweak_tweak      = 0.95  -- damage_tweak is multiplied by this value after every stage (heavier damage reduction late game)
+provi_damage_tweak      = 1.25  -- Multiplies Providence's (and his Wurms') damage by this value (applied after damage_tweak)
+health_multiplier       = 0.55
+chest_cost_tweak        = 1.8
+
+banned_items            = {
+    ["ror-infusion"]    = false,
+    ["ror-umbrella"]    = false
+}
 
 
 
--- ========== Functions ==========
+-- ========== Main ==========
 
-local function take_void_damage(actor, origin)
-    -- While in the void fog, take damage equal to a gradually increasing portion of current health
-    -- Guaranteed death after some time, but not fatal before that
-    actor.time_outside = actor.time_outside or 0
-    local dist = gm.point_distance(actor.x, actor.y, origin.x, origin.y)
-    if dist > radius then
-        if actor.invincible == false then actor.invincible = 0 end
-        if actor.invincible <= 0 then
-            actor.time_outside = actor.time_outside + 1
-            if actor.time_outside % 60 == 0 then
-                local int = math.floor(actor.time_outside / 60)
-                local dtime = void_death_time
-                if actor.team == 2.0 then dtime = void_death_time_enemy end
-                gm.damage_inflict(actor, actor.hp * Helper.ease_in(int/dtime))
-            end
+Initialize(function()
+    tp = Instance.wrap_invalid()
+    director = Instance.wrap_invalid()
+    void_actor = Instance.wrap_invalid()
+
+    -- Add difficulty
+    diff = Difficulty.new("klehrik", "simulacrum")
+    diff:set_sprite(
+        Resources.sprite_load("klehrik", "simulacrumIcon", PATH.."simulacrum.png", 5, 12, 9),
+        Resources.sprite_load("klehrik", "simulacrumIcon2x", PATH.."simulacrum2x.png", 4, 25, 19)
+    )
+    diff:set_primary_color(void_color)
+    diff:set_sound(Resources.sfx_load("klehrik", "simulacrumSfx", PATH.."simulacrum.ogg"))
+
+    diff:set_scaling(
+        diff_scale,
+        0,
+        0
+    )
+    diff:set_monsoon_or_higher(false)
+    diff:set_allow_blight_spawns(false)
+
+    -- Add void actor
+    local obj = Object.new("klehrik", "simulacrumVoid", Object.PARENT.actor)
+    obj.obj_sprite = Resources.sprite_load("klehrik", "simulacrumVoid", PATH.."simulacrum.png", 5, 13, 10)
+
+    -- diff:onActive(function()
+    --     -- Toggle item ban
+    --     for nsid, v in pairs(banned_items) do
+    --         local item = Item.find(nsid)
+    --         banned_items[nsid] = item:is_loot()
+    --         item:toggle_loot(false)
+    --     end
+    -- end)
+
+    -- diff:onInactive(function()
+    --     log.info("onInactive")
+
+    --     -- Untoggle item ban
+    --     for nsid, v in pairs(banned_items) do
+    --         local item = Item.find(nsid)
+    --         item:toggle_loot(banned_items[nsid])
+    --     end
+    -- end)
+end)
+
+
+Callback.add("onStageStart", "simulacrum-onStageStart", function(self, other, result, args)
+    if not diff:is_active() then return end
+    
+    Alarm.create(function()
+        if not tp:exists() then return end
+
+        spawned_rewards = false
+
+        -- Teleport local player to teleporter
+        local player = Player.get_client()
+        player.x, player.ghost_x = tp.x, tp.x
+        player.y, player.ghost_y = tp.y - 12, tp.y - 12
+
+        -- Set camera pan
+        local pan = Instance.find(gm.constants.oPodCameraPan)
+        if pan:exists() then
+            pan.x = tp.x
+            pan.y = tp.y
+            pan.target_y = tp.y
         end
-    else actor.time_outside = 0
-    end
-end
+
+        -- Create void actor
+        void_actor = Object.find("klehrik-simulacrumVoid"):create(-64, -64)
+        void_actor.invincible = 1000000
+
+        if not director:exists() then return end
+
+        -- Replace Divine Teleporters with standard ones until the required number of waves have been cleared
+        local tpe = Instance.find(gm.constants.oTeleporterEpic)
+        if  director.stages_passed < (required_waves - 1)
+        and tpe:exists() then
+            Object.find(gm.constants.oTeleporter):create(tpe.x, tpe.y)
+            tpe:destroy()
+        end
+    end, 1)
+end)
 
 
-local function draw_void_fog(origin)
-    gm.draw_set_circle_precision(64)
-
-    -- Create void fog surface
-    local cam = gm.view_get_camera(0)
-    if gm.surface_exists(surf) == 0.0 then surf = gm.surface_create(gm.camera_get_view_width(cam), gm.camera_get_view_height(cam)) end
-    gm.surface_set_target(surf)
-    gm.draw_clear_alpha(0, 0)
-
-    -- Draw void fog base
-    gm.draw_set_alpha(0.5)
-    gm.draw_rectangle_colour(0, 0, gm.camera_get_view_width(cam), gm.camera_get_view_height(cam), void_colour, void_colour, void_colour, void_colour, false)
-    gm.draw_set_alpha(1)
-
-    -- Punch hole in void fog
-    gm.gpu_set_blendmode(3) -- bm_subtract
-    gm.draw_circle(origin.x - gm.camera_get_view_x(cam), origin.y - gm.camera_get_view_y(cam), radius, false)
-    gm.gpu_set_blendmode(0) -- bm_normal
-
-    -- Draw void fog surface
-    gm.surface_reset_target()
-    gm.draw_surface(surf, gm.camera_get_view_x(cam), gm.camera_get_view_y(cam))
-
-
-    -- Add purple circles to draw
-    if frame % 15 == 0 then table.insert(void_circles, void_circle_radius) end
-
-    -- Draw purple circles
-    for i = #void_circles, 1, -1 do
-        local ease = Helper.ease_out(void_circles[i]/void_circle_radius, 3)
-        gm.draw_set_alpha(1 - ease)
-        local r = ease * void_circle_radius
-        gm.draw_circle_colour(origin.x, origin.y, radius + r, void_colour, void_colour, true)
-        gm.draw_set_alpha(1)
-
-        void_circles[i] = void_circles[i] - 1
-        if void_circles[i] <= 0 then table.remove(void_circles, i) end
-    end
-
-    -- Draw safe zone radius around teleporter
-    gm.draw_set_alpha(0.3)
-    gm.draw_circle(origin.x, origin.y, radius, true)
-    gm.draw_set_alpha(1)
-
-    gm.draw_set_circle_precision(24)
-end
-
-
-local function get_crate_items(crate_type)
-    local rarity_items = Helper.get_all_items(crate_type)
-
-    -- Remove banned items
-    for n, i in ipairs(rarity_items) do
-        local name = i.namespace.."-"..i.identifier
-        for _, b in ipairs(banned_items) do
-            if name == b then
-                table.remove(rarity_items, n)
-                break
-            end
+Callback.add("preStep", "simulacrum-preStep", function(self, other, result, args)
+    if not diff:is_active() then return end
+    
+    -- Find tp and director
+    if not tp:exists() then
+        tp = Instance.find(Instance.teleporters)
+        if tp:exists() then tp.maxtime = charge_time * 60
+        else
+            tp = Instance.find(gm.constants.oCommand)
+            if not tp:exists() then return end
         end
     end
-
-    return rarity_items
-end
-
-
-
--- ========== Hooks ==========
-
-gm.pre_script_hook(gm.constants.__input_system_tick, function()
-    frame = frame + 1
-
-    -- Initialize
-    if not init then
-        init = true
-
-        -- Initialize difficulty
-        diff_id = gm.difficulty_create("klehrik", "simulacrum")   -- Namespace, Identifier
-        local class_diff = gm.variable_global_get("class_difficulty")[diff_id + 1]
-        local values = {
-            "Simulacrum",   -- Name
-            "Fight your way through waves of teleporter events.\nBeat Wave "..required_waves.." to reach Providence.",  -- Description
-            diff_icon,      -- Sprite ID
-            diff_icon2x,    -- Sprite Loadout ID
-            void_colour,    -- Primary Color
-            diff_sfx,       -- Sound ID
-            diff_scale,     -- diff_scale
-            0.0,            -- general_scale
-            0.0,            -- point_scale
-            false,          -- is_monsoon_or_higher
-            false           -- allow_blight_spawns  -- Unbalanced for this mode
-        }
-        for i = 2, 12 do gm.array_set(class_diff, i, values[i - 1]) end
+    if not director:exists() then
+        director = Instance.find(gm.constants.oDirectorControl)
+        if not director:exists() then return end
     end
 
+    -- Spawn rewards on wave completion
+    if (not spawned_rewards)
+    and tp.active >= 3
+    and (not Net.is_client()) then
+        spawned_rewards = true
+        local wave = math.floor(director.stages_passed + 1)
 
-    -- Simulacrum
-    if gm._mod_game_getDifficulty() == diff_id then
+        -- Spawn a green item every 3 waves, and a red item on TotE
+        local crate_tier = Item.TIER.common
+        if wave % 3 == 0 then crate_tier = Item.TIER.uncommon end
+        if wave % 5 == 0 then crate_tier = Item.TIER.rare end
 
-        -- Teleporter
-        if not Helper.instance_exists(teleporter) then
-            teleporter = Helper.get_teleporter()
-            if Helper.instance_exists(teleporter) then teleporter.maxtime = charge_time *60     -- Set charge time to a lower amount
-            else teleporter = Helper.find_active_instance(gm.constants.oCommand)
-            end
+        -- Get random selection of items
+        local contents = {}
+        local items = Item.find_all(crate_tier, Item.ARRAY.tier)
+        while #contents < 3 do
+            local pos = gm.irandom_range(1, #items)
+            local item = items[pos]
+            table.insert(contents, item)
+            table.remove(items, pos)
         end
 
-
-        -- Director
-        if Helper.instance_exists(director) then
-            
-            -- Init new run variables
-            if flag_new_run then
-                frame = 0
-                stage_id = -1
-
-                local base = Helper.find_active_instance(gm.constants.oBase)
-                local pan = Helper.find_active_instance(gm.constants.oPodCameraPan)
-                if Helper.instance_exists(base) and Helper.instance_exists(pan) and Helper.instance_exists(teleporter) then
-                    base.x = teleporter.x
-                    base.y = teleporter.y
-                    pan.x = teleporter.x
-                    pan.y = teleporter.y
-                    pan.target_y = teleporter.y
-
-                    flag_new_run = false
-                end
-            end
-
-
-            -- Run stage enter stuff
-            if stage_id ~= gm.variable_global_get("stage_id") then
-                spawned_rewards = false
-
-                -- Warp players to teleporter
-                local players, exist = Helper.find_active_instance_all(gm.constants.oP)
-                if exist and Helper.instance_exists(teleporter) then
-                    for _, player in ipairs(players) do
-                        player.x = teleporter.x
-                        player.y = teleporter.y - 12
-                    end
-                    stage_id = gm.variable_global_get("stage_id")
-                end
-            end
-
-            -- Replace Divine Teleporters with standard ones until the required number of waves have been cleared
-            local tpe = Helper.find_active_instance(gm.constants.oTeleporterEpic)
-            if director.stages_passed < (required_waves - 1) and Helper.instance_exists(tpe) then
-                gm.instance_create_depth(tpe.x, tpe.y, 2, gm.constants.oTeleporter)
-                gm.instance_destroy(tpe)
-            end
-
-            -- Spawn crates after wave completion
-            if (not spawned_rewards) and Helper.is_singleplayer_or_host() then
-                if Helper.instance_exists(teleporter) then
-                    if teleporter.active >= 3.0 then
-                        spawned_rewards = true
-
-                        local wave = math.floor(director.stages_passed + 1)
-
-                        -- Spawn a green item every 3 waves, and a red item on TotE
-                        local crate_type = Helper.rarities.white
-                        if wave % 3 == 0 then crate_type = Helper.rarities.green end
-                        if wave % 5 == 0 then crate_type = Helper.rarities.red end
-
-                        -- Get random selection of items
-                        local contents = {}
-                        local rarity_items = get_crate_items(crate_type)
-                        for i = 1, 3 do
-                            local n = gm.irandom_range(1, #rarity_items)
-                            table.insert(contents, rarity_items[n].class_id)
-                            table.remove(rarity_items, n)
-                        end
-
-                        -- Spawn items
-                        local count = #Helper.find_active_instance_all(gm.constants.oP)
-                        local pos_x = -48
-                        for i = 1, count do
-                            Helper.spawn_crate(teleporter.x + pos_x, teleporter.y - 32, crate_type, contents)
-                            if i % 2 == 0 then pos_x = pos_x + (44 * gm.sign(pos_x)) end
-                            pos_x = -pos_x
-                        end
-
-
-                        -- Lower "boss_spawn_points"
-                        -- The director gains 700 every time the teleporter is hit
-                        director.boss_spawn_points = director.boss_spawn_points - 350
-
-                        -- Damage tweak tweak
-                        damage_tweak = damage_tweak * damage_tweak_tweak
-                    end
-                end
-            end
-
-        else director = Helper.find_active_instance(gm.constants.oDirectorControl)
+        -- Spawn items
+        local count = #Instance.find_all(gm.constants.oP)
+        local pos_x = -48
+        for i = 1, count do
+            Item.spawn_crate(tp.x + pos_x, tp.y, crate_tier, contents)
+            if i % 2 == 0 then pos_x = pos_x + (44 * gm.sign(pos_x)) end
+            pos_x = -pos_x
         end
 
+        -- Lower "boss_spawn_points"
+        -- The director gains 700 every time the teleporter is hit
+        director.boss_spawn_points = director.boss_spawn_points - 350
 
-        -- Replace all banned items
-        for _, b in ipairs(banned_items) do
-            local item = Helper.find_item(b)
-            local items = Helper.find_active_instance_all(item.id)
-
-            for _, i in ipairs(items) do
-                if Helper.is_singleplayer_or_host() then
-                    local rarity_items = get_crate_items(item.rarity)
-                    gm.instance_create_depth(i.x, i.y, 0, rarity_items[gm.irandom_range(1, #rarity_items)].id)
-                end
-                gm.instance_destroy(i)
-            end
-        end
-
+        -- Damage tweak tweak
+        damage_tweak = damage_tweak * damage_tweak_tweak
     end
 end)
 
 
-gm.post_script_hook(gm.constants.step_actor, function(self, other, result, args)
-    if gm._mod_game_getDifficulty() == diff_id then
-        -- Reduce enemy attack damage
-        if self.team == 2.0 and self.simulacrum_damage_tweak == nil then
-            self.simulacrum_damage_tweak = true
+Callback.add("postHUDDraw", "simulacrum-postHUDDraw", function(self, other, result, args)
+    if not diff:is_active() then return end
+    if not tp:exists() then return end
+
+    -- Draw void fog
+    draw_void_fog(tp.x, tp.y)
     
-            if self.damage ~= nil then
-                self.damage = self.damage * damage_tweak
-                self.damage_base = self.damage_base * damage_tweak
+    if not director:exists() then return end
 
-                -- Provi fight damage multiplier
-                if self.object_index == gm.constants.oBoss1
-                or self.object_index == gm.constants.oBoss3
-                or self.object_index == gm.constants.oBoss4
-                or self.object_index == gm.constants.oWurmHead then
-                    self.damage = self.damage * provi_damage_tweak
-                    self.damage_base = self.damage_base * provi_damage_tweak
-                end
-            end
+    -- Draw text under tp
+    if tp.time then -- Do not draw for oCommand
+        local tkey = "simulacrum.wave"
+        if tp.time <= 0 then tkey = "simulacrum.begin"
+        elseif tp.active >= 3 then tkey = "simulacrum.next"
         end
+        local text = Language.translate_token(tkey)
+        text = text:gsub("WAVE", math.floor(director.stages_passed + 1))
+        local c = Color.WHITE
+        gm.draw_text_color(tp.x, tp.y + 18, text, c, c, c, c, 1.0)
+    end
+end)
 
-        -- Deal void fog damage to all actors
-        if Helper.instance_exists(teleporter) then take_void_damage(self, teleporter) end
+
+Actor:onPreStep("simulacrum-onPreStep", function(actor)
+    if not diff:is_active() then return end
+    if not tp:exists() then return end
+    
+    -- Deal void fog damage to all actors
+    take_void_damage(actor, tp.x, tp.y)
+end)
+
+
+Actor:onPostStatRecalc("simulacrum-onPostStatRecalc", function(actor)
+    if not diff:is_active() then return end
+    if actor.team ~= 2 then return end
+
+    -- Reduce enemy attack damage and health
+    actor.damage = actor.damage * damage_tweak
+    actor.maxhp = actor.maxhp * health_multiplier
+    actor.maxbarrier = actor.maxbarrier * health_multiplier
+    actor.hp = math.min(actor.hp, actor.maxhp)
+
+    -- Manually set oHUD boss maxhp (??)
+    local hud = Instance.find(gm.constants.oHUD)
+    if hud:exists() and hud.boss_party_active then
+        hud.boss_party_active.hp_total_max = actor.maxhp
+    end
+
+    -- Provi fight damage multiplier
+    if boss_objs[actor.object_index] then
+        actor.damage = actor.damage * provi_damage_tweak
     end
 end)
 
 
 gm.pre_code_execute("gml_Object_oDirectorControl_Alarm_1", function(self, other)
     -- Prevent enemies from spawning before the teleporter is hit, as well as on the ship
-    if Helper.instance_exists(teleporter) and (teleporter.time == nil or teleporter.time <= 0) then
-        self:alarm_set(1, 60)
-        return false
-    end
+    if not diff:is_active() then return end
+    if not tp:exists() then return end
+    if tp.time > 0 then return end
+
+    self:alarm_set(1, 60)
+    return false
 end)
 
 
 gm.post_script_hook(gm.constants.cost_get_base_gold_price_scale, function(self, other, result, args)
     -- Scale up natural interactable costs
-    if gm._mod_game_getDifficulty() == diff_id then
-        result.value = result.value * chest_cost_tweak
-    end
-end)
-
-
-gm.post_code_execute("gml_Object_oInit_Draw_73", function(self, other)
-    if gm._mod_game_getDifficulty() == diff_id then
-
-        -- Teleporter draw
-        if Helper.instance_exists(teleporter) then
-
-            -- Wave count
-            if director and teleporter.time ~= nil then
-                local text = "Wave "..(math.floor(director.stages_passed + 1))
-                if teleporter.time <= 0 then text = "Begin wave?"
-                elseif teleporter.active >= 3.0 then text = "Proceed to next wave"
-                end
-                gm.draw_text(teleporter.x, teleporter.y + 18, text)
-            end
-
-            draw_void_fog(teleporter)
-
-        end
-
-    end
-end)
-
-
-gm.post_script_hook(gm.constants.run_create, function(self, other, result, args)
-    if gm._mod_game_getDifficulty() == diff_id then
-        flag_new_run = true
-
-        -- Replace "Very Easy" localization text temporarily
-        -- Can't seem to change the oHUD one directly so
-        lang_map = gm.variable_global_get("_language_map")
-        very_easy_text = gm.ds_map_find_value(lang_map, "hud.difficulty[0]")
-        gm.ds_map_set(lang_map, "hud.difficulty[0]", "--")
-    end
-end)
-
-
-gm.pre_script_hook(gm.constants.run_destroy, function(self, other, result, args)
-    if gm._mod_game_getDifficulty() == diff_id then
-        -- Put "Very Easy" localization text back
-        gm.ds_map_set(lang_map, "hud.difficulty[0]", very_easy_text)
-    end
-end)
-
-
-gm.pre_script_hook(gm.constants.step_actor, function(self, other, result, args)
-    if gm._mod_game_getDifficulty() == diff_id then
-        -- Health multiplier
-        if self.team == 2.0 and self.simulacrum_health_multiplier == nil then
-            self.simulacrum_health_multiplier = true
-
-            if self.maxhp then
-                self.maxhp = self.maxhp * health_multiplier
-                self.maxhp_base = self.maxhp
-                self.hp = self.maxhp
-                self.maxbarrier = self.maxhp
-            end
-        end
-    end
+    if not diff:is_active() then return end
+    result.value = result.value * chest_cost_tweak
 end)

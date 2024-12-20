@@ -3,8 +3,7 @@ Beat Wave 20 to reach Providence (or continue on, if you wish).
 
 All actors take void fog damage outside of the safe zone.  
 
-Compatible with online multiplayer.  
-(NOTE: You must turn off "Allow rule voting", or the game will crash.)
+Online compatible.  
 
 ---
 

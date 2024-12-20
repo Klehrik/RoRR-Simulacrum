@@ -1,0 +1,18 @@
+{
+    "difficulty" : {
+        "simulacrum" : {
+            "name" : "Simulacrum",
+            "description" : "Fight your way through waves of teleporter events.\nBeat Wave 20 to reach Providence."
+        }
+    },
+
+    "simulacrum" : {
+        "begin" : "Begin wave?",
+        "wave" : "Wave WAVE",
+        "next" : "Proceed to next wave"
+    },
+
+    "actor" : {
+		"simulacrumVoid.name" : "The Void"
+    }
+}
