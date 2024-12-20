@@ -22,7 +22,7 @@ required_waves          = 7
 radius                  = 1000  -- Radius of safe zone (in pixels)
 void_circle_radius      = 250
 void_color              = Color(0x802E99)
-void_death_time         = 18    -- Time (in seconds) before guaranteed death outside the safe zone
+void_death_time         = 1--8    -- Time (in seconds) before guaranteed death outside the safe zone
 void_death_time_enemy   = 27
 charge_time             = 20    -- Teleporter charge time (in seconds)
 diff_scale              = 0.12
@@ -65,7 +65,7 @@ Initialize(function()
 
     -- Add void actor
     local obj = Object.new("klehrik", "simulacrumVoid", Object.PARENT.actor)
-    obj.obj_sprite = Resources.sprite_load("klehrik", "simulacrumVoid", PATH.."simulacrum.png", 5, 13, 10)
+    obj.obj_sprite = Resources.sprite_load("klehrik", "simulacrumVoid", PATH.."simulacrumVoid.png", 1, 20, 23)
 
     -- diff:onActive(function()
     --     -- Toggle item ban
@@ -108,10 +108,12 @@ Callback.add("onStageStart", "simulacrum-onStageStart", function(self, other, re
             pan.y = tp.y
             pan.target_y = tp.y
         end
+        
+        if Net.is_client() then return end
 
         -- Create void actor
         void_actor = Object.find("klehrik-simulacrumVoid"):create(-64, -64)
-        void_actor.invincible = 1000000
+        void_actor.invincible = 10000000
 
         if not director:exists() then return end
 
@@ -210,6 +212,7 @@ end)
 Actor:onPreStep("simulacrum-onPreStep", function(actor)
     if not diff:is_active() then return end
     if not tp:exists() then return end
+    if Net.is_client() then return end
     
     -- Deal void fog damage to all actors
     take_void_damage(actor, tp.x, tp.y)
