@@ -57,8 +57,9 @@ Initialize(function()
     diff:set_monsoon_or_higher(false)
     diff:set_allow_blight_spawns(false)
 
-    -- Add void actor
+    -- Add void objects
     add_void_actor()
+    add_void_bg()
 end)
 
 
@@ -85,11 +86,12 @@ Callback.add("onStageStart", "simulacrum-onStageStart", function(self, other, re
     -- Manually set enemy_buff
     director.enemy_buff = (enemy_buff_base + (enemy_buff_scale * director.stages_passed)) * gm.power(enemy_buff_exp, director.stages_passed)
 
-    -- Create void actor
+    -- Create void objects
     if Net.is_client() then return end
     void_actor = Object.find("klehrik-simulacrumVoid"):create(tp.x, tp.y)
     void_actor.image_alpha = 0
     void_actor.invincible = 10000000
+    Object.find("klehrik-simulacrumBG"):create(0, 0)
 
     -- Replace Divine Teleporters with standard ones until the required number of waves have been cleared
     local tpe = Instance.find(gm.constants.oTeleporterEpic)

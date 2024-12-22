@@ -20,7 +20,7 @@ function add_void_actor()
         gm.draw_clear_alpha(0, 0)
 
         -- Draw void fog base
-        gm.draw_set_alpha(0.5)
+        gm.draw_set_alpha(0.55)
         gm.draw_rectangle_colour(0, 0, gm.camera_get_view_width(cam), gm.camera_get_view_height(cam), void_color, void_color, void_color, void_color, false)
         gm.draw_set_alpha(1)
 
@@ -56,6 +56,24 @@ function add_void_actor()
         gm.draw_set_alpha(1)
 
         gm.draw_set_circle_precision(24)
+    end)
+end
+
+
+function add_void_bg()
+    local obj = Object.new("klehrik", "simulacrumBG")
+    obj.obj_depth = 1000
+
+    obj:onDraw(function(inst)
+        local bm = gm.gpu_get_blendmode()
+        gm.gpu_set_blendmode(3)
+        local c = Color(0x467338)
+        local cam = gm.view_get_camera(0)
+        gm.draw_rectangle_color(
+            gm.camera_get_view_x(cam), gm.camera_get_view_y(cam),
+            gm.camera_get_view_x(cam) + gm.camera_get_view_width(cam), gm.camera_get_view_y(cam) + gm.camera_get_view_height(cam),
+            c, c, c, c, false)
+        gm.gpu_set_blendmode(bm)
     end)
 end
 
