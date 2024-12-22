@@ -174,10 +174,6 @@ end)
 Callback.add("postHUDDraw", "simulacrum-postHUDDraw", function(self, other, result, args)
     if not diff:is_active() then return end
     if not tp:exists() then return end
-
-    -- Draw void fog
-    -- draw_void_fog(tp.x, tp.y)
-    
     if not director:exists() then return end
 
     -- Draw text under tp
