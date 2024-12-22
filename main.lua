@@ -30,7 +30,6 @@ enemy_buff_scale        = 0.25  -- enemy_buff linear scaling per stage
 enemy_buff_exp          = 1.02  -- enemy_buff exponential multiplier per stage
 chest_cost_tweak        = 1.8
 
-local damage_tweak_og = damage_tweak
 local ban_applied = false
 local banned_items = {
     ["ror-infusion"]    = false,
