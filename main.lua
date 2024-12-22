@@ -8,8 +8,7 @@ PATH = _ENV["!plugins_mod_folder_path"].."/"
 
 require("./void_fog")
 
-local diff, spawned_rewards, teleported, tp, director
-void_actor = nil
+local diff, spawned_rewards, teleported, tp, director, void_actor
 local boss_objs = {
     [gm.constants.oBoss1]       = true,
     [gm.constants.oBoss3]       = true,
@@ -59,8 +58,7 @@ Initialize(function()
     diff:set_allow_blight_spawns(false)
 
     -- Add void actor
-    local obj = Object.new("klehrik", "simulacrumVoid", Object.PARENT.enemyFlying)
-    obj.obj_sprite = Resources.sprite_load("klehrik", "simulacrumVoid", PATH.."simulacrumVoid.png", 1, 20, 23)
+    add_void_actor()
 end)
 
 
@@ -89,7 +87,8 @@ Callback.add("onStageStart", "simulacrum-onStageStart", function(self, other, re
 
     -- Create void actor
     if Net.is_client() then return end
-    void_actor = Object.find("klehrik-simulacrumVoid"):create(-64, -64)
+    void_actor = Object.find("klehrik-simulacrumVoid"):create(tp.x, tp.y)
+    void_actor.image_alpha = 0
     void_actor.invincible = 10000000
 
     -- Replace Divine Teleporters with standard ones until the required number of waves have been cleared
@@ -177,7 +176,7 @@ Callback.add("postHUDDraw", "simulacrum-postHUDDraw", function(self, other, resu
     if not tp:exists() then return end
 
     -- Draw void fog
-    draw_void_fog(tp.x, tp.y)
+    -- draw_void_fog(tp.x, tp.y)
     
     if not director:exists() then return end
 
@@ -196,12 +195,11 @@ end)
 
 
 Actor:onPreStep("simulacrum-onPreStep", function(actor)
-    if not diff:is_active() then return end
-    if not tp:exists() then return end
+    if not void_actor:exists() then return end
     if Net.is_client() then return end
     
     -- Deal void fog damage to all actors
-    take_void_damage(actor, tp.x, tp.y)
+    take_void_damage(actor, void_actor)
 end)
 
 
