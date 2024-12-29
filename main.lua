@@ -86,14 +86,19 @@ Callback.add(Callback.TYPE.onStageStart, "simulacrum-onStageStart", function()
     -- Manually set enemy_buff
     director.enemy_buff = (enemy_buff_base + (enemy_buff_scale * director.stages_passed)) * gm.power(enemy_buff_exp, director.stages_passed)
 
-    -- Create void objects
+    -- Create void actor
     if Net.is_client() then return end
     void_actor = Object.find("klehrik-simulacrumVoid"):create(tp.x, tp.y)
     void_actor.image_alpha = 0
     void_actor.invincible = 10000000
     void_actor.team = 1
     void_actor.is_targettable = false
-    Object.find("klehrik-simulacrumBG"):create(0, 0)
+
+    -- Create void BG
+    -- Skip if in water
+    if not tp:is_colliding(gm.constants.oWater) then
+        Object.find("klehrik-simulacrumBG"):create(0, 0)
+    end
 
     -- Replace Divine Teleporters with standard ones until the required number of waves have been cleared
     local tpe = Instance.find(gm.constants.oTeleporterEpic)
