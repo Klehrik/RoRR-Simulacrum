@@ -63,7 +63,7 @@ Initialize(function()
 end)
 
 
-Callback.add("onStageStart", "simulacrum-onStageStart", function(self, other, result, args)
+Callback.add(Callback.TYPE.onStageStart, "simulacrum-onStageStart", function()
     if not diff:is_active() then return end
 
     spawned_rewards = false
@@ -104,7 +104,7 @@ Callback.add("onStageStart", "simulacrum-onStageStart", function(self, other, re
 end)
 
 
-Callback.add("preStep", "simulacrum-preStep", function(self, other, result, args)  
+Callback.add(Callback.TYPE.preStep, "simulacrum-preStep", function()  
     if not diff:is_active() then return end
     if not tp:exists() then return end
     if not director:exists() then return end
@@ -150,7 +150,7 @@ Callback.add("preStep", "simulacrum-preStep", function(self, other, result, args
 end)
 
 
-Callback.add("postStep", "simulacrum-postStep", function(self, other, result, args)
+Callback.add(Callback.TYPE.postStep, "simulacrum-postStep", function()
     if teleported then return end
     if not tp:exists() then return end
     
@@ -173,7 +173,7 @@ Callback.add("postStep", "simulacrum-postStep", function(self, other, result, ar
 end)
 
 
-Callback.add("postHUDDraw", "simulacrum-postHUDDraw", function(self, other, result, args)
+Callback.add(Callback.TYPE.postHUDDraw, "simulacrum-postHUDDraw", function()
     if not diff:is_active() then return end
     if not tp:exists() then return end
     if not director:exists() then return end
