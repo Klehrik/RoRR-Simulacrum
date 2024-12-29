@@ -201,15 +201,6 @@ Callback.add(Callback.TYPE.postHUDDraw, "simulacrum-postHUDDraw", function()
 end)
 
 
--- Actor:onPreStep("simulacrum-onPreStep", function(actor)
---     if not void_actor:exists() then return end
---     if Net.is_client() then return end
-    
---     -- Deal void fog damage to all actors
---     take_void_damage(actor, void_actor)
--- end)
-
-
 gm.pre_code_execute("gml_Object_oDirectorControl_Alarm_1", function(self, other)
     if not diff:is_active() then return end
     if not tp:exists() then return end
