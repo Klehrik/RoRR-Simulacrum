@@ -89,6 +89,7 @@ Callback.add(Callback.TYPE.onStageStart, "simulacrum-onStageStart", function()
     -- Create void objects
     if Net.is_client() then return end
     void_actor = Object.find("klehrik-simulacrumVoid"):create(tp.x, tp.y)
+    void_actor.team = 1     -- Prevent damaging/target-locking onto actor
     void_actor.image_alpha = 0
     void_actor.invincible = 10000000
     Object.find("klehrik-simulacrumBG"):create(0, 0)
