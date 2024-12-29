@@ -89,9 +89,10 @@ Callback.add(Callback.TYPE.onStageStart, "simulacrum-onStageStart", function()
     -- Create void objects
     if Net.is_client() then return end
     void_actor = Object.find("klehrik-simulacrumVoid"):create(tp.x, tp.y)
-    void_actor.team = 1     -- Prevent damaging/target-locking onto actor
     void_actor.image_alpha = 0
     void_actor.invincible = 10000000
+    void_actor.team = 1
+    void_actor.is_targettable = false
     Object.find("klehrik-simulacrumBG"):create(0, 0)
 
     -- Replace Divine Teleporters with standard ones until the required number of waves have been cleared
@@ -109,11 +110,11 @@ Callback.add(Callback.TYPE.preStep, "simulacrum-preStep", function()
     if not diff:is_active() then return end
     if not tp:exists() then return end
     if not director:exists() then return end
+    if Net.is_client() then return end
 
     -- Spawn rewards on wave completion
     if (not spawned_rewards)
-    and tp.active >= 3
-    and (not Net.is_client()) then
+    and tp.active >= 3 then
         spawned_rewards = true
         local wave = math.floor(director.stages_passed + 1)
 
@@ -148,11 +149,18 @@ Callback.add(Callback.TYPE.preStep, "simulacrum-preStep", function()
         -- The director gains 700 every time the teleporter is hit; this will effectively halve gain
         director.boss_spawn_points = director.boss_spawn_points - 350
     end
+
+    -- Deal void fog damage to all actors
+    local actors = Instance.find_all(gm.constants.pActor)
+    for _, actor in ipairs(actors) do
+        take_void_damage(actor, void_actor)
+    end
 end)
 
 
 Callback.add(Callback.TYPE.postStep, "simulacrum-postStep", function()
     if teleported then return end
+    if not diff:is_active() then return end
     if not tp:exists() then return end
     
     teleported = true
@@ -193,13 +201,13 @@ Callback.add(Callback.TYPE.postHUDDraw, "simulacrum-postHUDDraw", function()
 end)
 
 
-Actor:onPreStep("simulacrum-onPreStep", function(actor)
-    if not void_actor:exists() then return end
-    if Net.is_client() then return end
+-- Actor:onPreStep("simulacrum-onPreStep", function(actor)
+--     if not void_actor:exists() then return end
+--     if Net.is_client() then return end
     
-    -- Deal void fog damage to all actors
-    take_void_damage(actor, void_actor)
-end)
+--     -- Deal void fog damage to all actors
+--     take_void_damage(actor, void_actor)
+-- end)
 
 
 gm.pre_code_execute("gml_Object_oDirectorControl_Alarm_1", function(self, other)
