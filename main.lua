@@ -149,8 +149,8 @@ Callback.add(Callback.TYPE.preStep, "simulacrum-preStep", function()
         -- Lower "boss_spawn_points"
         -- The director gains 700 every time the teleporter is hit;
         -- this will effectively halve gain i.e., 350 points per tp
-        -- Scale gain by an additional 50% per player
-        director.boss_spawn_points = director.boss_spawn_points - 350 + ((count - 1) * 350 * 0.5)
+        -- Scale gain by an additional 60% per player
+        director.boss_spawn_points = director.boss_spawn_points - 350 + ((count - 1) * 350 * 0.6)
     end
 
     -- Deal void fog damage to all actors
