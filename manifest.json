@@ -5,7 +5,7 @@
 	"description": "Fight your way through waves of teleporter events.",
 	"dependencies": [
 		"ReturnOfModding-ReturnOfModding-1.0.56",
-		"RoRRModdingToolkit-RoRR_Modding_Toolkit-1.2.9",
+		"RoRRModdingToolkit-RoRR_Modding_Toolkit-1.2.10",
 		"MGReturns-ENVY-1.1.1"
 	]
 }
