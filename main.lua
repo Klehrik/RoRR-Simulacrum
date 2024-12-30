@@ -63,6 +63,23 @@ Initialize(function()
 end)
 
 
+local function find_tp_and_director()
+    if not tp:exists() then
+        tp = Instance.find(Instance.teleporters)
+        if tp:exists() then tp.maxtime = charge_time * 60
+        else
+            tp = Instance.find(gm.constants.oCommand)
+            if not tp:exists() then return false end
+        end
+    end
+    if not director:exists() then
+        director = Instance.find(gm.constants.oDirectorControl)
+        if not director:exists() then return false end
+    end
+    return true
+end
+
+
 Callback.add(Callback.TYPE.onStageStart, "simulacrum-onStageStart", function()
     if not diff:is_active() then return end
 
@@ -70,35 +87,15 @@ Callback.add(Callback.TYPE.onStageStart, "simulacrum-onStageStart", function()
     teleported = false
     
     -- Find tp and director
-    if not tp:exists() then
-        tp = Instance.find(Instance.teleporters)
-        if tp:exists() then tp.maxtime = charge_time * 60
-        else
-            tp = Instance.find(gm.constants.oCommand)
-            if not tp:exists() then return end
-        end
-    end
-    if not director:exists() then
-        director = Instance.find(gm.constants.oDirectorControl)
-        if not director:exists() then return end
-    end
+    if not find_tp_and_director() then return end
 
     -- Manually set enemy_buff
     director.enemy_buff = (enemy_buff_base + (enemy_buff_scale * director.stages_passed)) * gm.power(enemy_buff_exp, director.stages_passed)
+    
+    if Net.is_client() then return end
 
     -- Create void actor
-    if Net.is_client() then return end
     void_actor = Object.find("klehrik-simulacrumVoid"):create(tp.x, tp.y)
-    void_actor.image_alpha = 0
-    void_actor.invincible = 10000000
-    void_actor.team = 1
-    void_actor.is_targettable = false
-
-    -- Create void BG
-    -- Skip if in water
-    if not tp:is_colliding(gm.constants.oWater) then
-        Object.find("klehrik-simulacrumBG"):create(0, 0)
-    end
 
     -- Replace Divine Teleporters with standard ones until the required number of waves have been cleared
     local tpe = Instance.find(gm.constants.oTeleporterEpic)
@@ -111,10 +108,9 @@ Callback.add(Callback.TYPE.onStageStart, "simulacrum-onStageStart", function()
 end)
 
 
-Callback.add(Callback.TYPE.preStep, "simulacrum-preStep", function()  
+Callback.add(Callback.TYPE.preStep, "simulacrum-preStep", function()
+    if not find_tp_and_director() then return end
     if not diff:is_active() then return end
-    if not tp:exists() then return end
-    if not director:exists() then return end
     if Net.is_client() then return end
 
     -- Spawn rewards on wave completion
@@ -151,8 +147,10 @@ Callback.add(Callback.TYPE.preStep, "simulacrum-preStep", function()
         end
 
         -- Lower "boss_spawn_points"
-        -- The director gains 700 every time the teleporter is hit; this will effectively halve gain
-        director.boss_spawn_points = director.boss_spawn_points - 350
+        -- The director gains 700 every time the teleporter is hit;
+        -- this will effectively halve gain i.e., 350 points per tp
+        -- Scale gain by an additional 50% per player
+        director.boss_spawn_points = director.boss_spawn_points - 350 + ((count - 1) * 350 * 0.5)
     end
 
     -- Deal void fog damage to all actors
@@ -184,6 +182,28 @@ Callback.add(Callback.TYPE.postStep, "simulacrum-postStep", function()
         pan.y = tp.y
         pan.target_y = tp.y
     end
+
+    -- Create void BG
+    -- Skip if in Sunken Tombs
+    if Global.stage_id ~= 5 then
+        Object.find("klehrik-simulacrumBG"):create(0, 0)
+    end
+end)
+
+
+Callback.add(Callback.TYPE.postStep, "simulacrum-postStep2", function()
+    if not diff:is_active() then return end
+
+    -- Set void actor properties
+    -- There are definitely better places to put this, but I'm tired
+    if not void_actor:exists() then
+        void_actor = Instance.find(Object.find("klehrik-simulacrumVoid"))
+        if not void_actor:exists() then return end
+    end
+    void_actor.image_alpha = 0
+    void_actor.invincible = 10000000
+    void_actor.team = 1
+    void_actor.is_targettable = false
 end)
 
 

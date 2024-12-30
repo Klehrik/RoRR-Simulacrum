@@ -1,5 +1,6 @@
 ### v1.2.0
 * Updated to use RMT.
+* Background is now tinted purple.
 
 ### v1.1.4
 * Fixed void area not being drawn as a result of last patch.
