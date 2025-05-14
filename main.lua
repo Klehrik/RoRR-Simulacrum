@@ -1,7 +1,7 @@
 -- Simulacrum
 -- Klehrik
 
-mods["MGReturns-ENVY"].auto()
+mods["LuaENVY-ENVY"].auto()
 mods["RoRRModdingToolkit-RoRR_Modding_Toolkit"].auto(true)
 
 PATH = _ENV["!plugins_mod_folder_path"].."/"
@@ -109,9 +109,9 @@ end)
 
 
 Callback.add(Callback.TYPE.preStep, "simulacrum-preStep", function()
-    if not find_tp_and_director() then return end
     if not diff:is_active() then return end
     if Net.is_client() then return end
+    if not find_tp_and_director() then return end
 
     -- Spawn rewards on wave completion
     if (not spawned_rewards)

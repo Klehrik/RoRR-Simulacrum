@@ -1,11 +1,11 @@
 ﻿{
 	"name": "Simulacrum",
-	"version_number": "1.2.0",
+	"version_number": "1.2.1",
 	"website_url": "https://github.com/Klehrik/RoRR-Simulacrum",
 	"description": "Fight your way through waves of teleporter events.",
 	"dependencies": [
-		"ReturnOfModding-ReturnOfModding-1.0.56",
-		"RoRRModdingToolkit-RoRR_Modding_Toolkit-1.2.10",
-		"MGReturns-ENVY-1.1.1"
+		"ReturnOfModding-ReturnOfModding-1.0.70",
+		"RoRRModdingToolkit-RoRR_Modding_Toolkit-1.2.18",
+		"LuaENVY-ENVY-1.2.0"
 	]
 }

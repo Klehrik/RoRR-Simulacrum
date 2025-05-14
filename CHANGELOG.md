@@ -1,3 +1,6 @@
+### v1.2.1
+* Fixed 25 second teleporter charge time applying to all difficulties.
+
 ### v1.2.0
 * Updated to use RMT.
 * Background is now tinted purple.
